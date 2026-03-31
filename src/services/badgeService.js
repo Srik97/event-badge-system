@@ -86,7 +86,7 @@ function buildBadgeHTML(template, participant, settings) {
 async function renderBadgeToPDF(browser, html) {
   const page = await browser.newPage();
   try {
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'load', timeout: 15000 });
     // A6 at 96dpi: 397×561px
     const pdfBuffer = await page.pdf({
       width:  '105mm',
