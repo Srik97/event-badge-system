@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: event-badge-system
+    env: node
+    plan: free
+    buildCommand: npm install && npx puppeteer browsers install chrome && npm run setup
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    # Important: To keep your SQLite database from being wiped out every time Render restarts the server,
+    # you will need to upgrade to a paid tier to use this "Disk" feature. 
+    # If you are ok with data resetting on deploys, you can comment the disk out.
+    # disk:
+    #   name: data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1

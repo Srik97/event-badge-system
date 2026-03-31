@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Techmen QR App</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { 
+    --bg: #0f1117; --bg2: #181c27; --bg3: #1e2333; 
+    --text: #e8eaf0; --muted: #8890a8; --border: #2a2f42; 
+    --accent: #4f7ef8; --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+    --radius: 14px; 
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-weight: 800; font-size: 16px; color: var(--accent); margin-right: auto; }
+  select, .header input { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 8px; font-size: 13px; outline: none; transition: border-color .15s; }
+  select:focus, .header input:focus { border-color: var(--accent); }
+  #operatorId { width: 100px; }
+  #wsDot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); transition: background .3s; margin-left: 4px; }
+
+  .main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px 16px; }
+
+  /* SCAN BOX */
+  .scan-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
+  
+  #reader { width: 100%; border-radius: 10px; overflow: hidden; background: #000; margin-bottom: 16px; position: relative; aspect-ratio: 1/1; display: none; }
+  #reader.active { display: block; border: 2px solid var(--accent); }
+
+  /* Scan area decoration */
+  .scan-placeholder { width: 100%; aspect-ratio: 1/1; background: var(--bg3); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 12px; margin-bottom: 16px; border: 2px dashed var(--border); transition: all .3s; }
+  .scan-placeholder.hidden { display: none; }
+  .icon-cam { font-size: 40px; }
+
+  .input-wrap { display: flex; gap: 8px; margin-top: 10px; }
+  #scanInput { 
+    flex: 1; font-size: 18px; padding: 12px; border-radius: 10px; 
+    border: 2px solid var(--border); background: var(--bg3); color: var(--text);
+    text-align: center; letter-spacing: 1px; outline: none; transition: all .2s;
+  }
+  #scanInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79, 126, 248, 0.2); }
+
+  .cam-btn { width: 50px; height: 50px; background: var(--accent); color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: transform .1s, background .2s; flex-shrink: 0; }
+  .cam-btn:active { transform: scale(0.95); }
+  .cam-btn.stop { background: var(--red); }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 14px; text-align: center; }
+
+  /* OVERLAY */
+  #overlay { position: fixed; inset: 0; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all .3s cubic-bezier(0.4, 0, 0.2, 1); transform: scale(1.1); backdrop-filter: blur(8px); }
+  #overlay.show { opacity: 1; pointer-events: all; transform: scale(1); }
+  
+  .ov-card { padding: 40px 20px; border-radius: 20px; width: 85%; max-width: 360px; text-align: center; color: #fff; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+  .ov-icon { font-size: 80px; margin-bottom: 20px; }
+  .ov-status { font-size: 32px; font-weight: 800; -webkit-text-stroke: 1px rgba(0,0,0,0.1); margin-bottom: 12px; }
+  .ov-name { font-size: 26px; font-weight: 700; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; }
+  .ov-type { font-size: 13px; font-weight: 700; text-transform: uppercase; padding: 4px 16px; border-radius: 20px; background: rgba(0,0,0,0.2); display: inline-block; margin-bottom: 16px; letter-spacing: 1px; }
+  .ov-msg { font-size: 16px; opacity: 0.9; margin-bottom: 30px; line-height: 1.4; }
+  .ov-close { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 12px 30px; border-radius: 12px; font-weight: 600; cursor: pointer; }
+
+  .bg-allow { background: linear-gradient(135deg, #166534, #14532d); }
+  .bg-warn  { background: linear-gradient(135deg, #92400e, #78350f); }
+  .bg-deny  { background: linear-gradient(135deg, #991b1b, #7f1d1d); }
+
+  /* RECENT SCANS */
+  .recent { width: 100%; max-width: 440px; margin-top: 24px; }
+  .recent-header { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .item { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; animation: slideIn .3s ease-out; transition: transform .2s; }
+  .item:hover { transform: translateX(4px); }
+  .item-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+  .item-name { flex: 1; font-weight: 600; font-size: 14px; }
+  .item-type { font-size: 11px; color: var(--muted); margin-left: 6px; }
+  .item-time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Scanner internal styles override */
+  #reader__dashboard_section_csr button { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; margin: 4px; }
+  #reader__scan_region video { object-fit: cover !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">🎫 Techmen QR App</div>
+  <select id="stationType">
+    <option value="checkin">Check-in</option>
+    <option value="checkout">Check-out</option>
+    <option value="lunch">Lunch</option>
+    <option value="kit">Kit Collection</option>
+  </select>
+  <input type="text" id="operatorId" placeholder="Gate/Operator" value="Main">
+  <div id="wsDot"></div>
+</div>
+
+<div class="main">
+  <div class="scan-box">
+    <div id="reader"></div>
+    <div class="scan-placeholder" id="placeholder">
+      <div class="icon-cam">📷</div>
+      <div style="font-size: 14px;">Tap camera icon to scan</div>
+    </div>
+
+    <div class="input-wrap">
+      <input type="text" id="scanInput" placeholder="Wait for scan..." autofocus autocomplete="off">
+      <button class="cam-btn" id="camBtn" onclick="toggleCamera()">📷</button>
+    </div>
+    
+    <p class="hint">Scanning <strong><span id="label-station">check-in</span></strong> station</p>
+  </div>
+
+  <div class="recent">
+    <div class="recent-header"><span>Recent activity</span></div>
+    <div id="recentList"></div>
+  </div>
+</div>
+
+<!-- Overlay -->
+<div id="overlay">
+  <div class="ov-card" id="ovCard">
+    <div class="ov-icon" id="ovIcon"></div>
+    <div class="ov-status" id="ovStatus"></div>
+    <div class="ov-name" id="ovName"></div>
+    <div class="ov-type" id="ovType"></div>
+    <div class="ov-msg" id="ovMsg"></div>
+    <button class="ov-close" onclick="closeOverlay()">Dismiss</button>
+  </div>
+</div>
+
+<script src="/js/html5-qrcode.min.js"></script>
+<script>
+const input = document.getElementById('scanInput');
+const camBtn = document.getElementById('camBtn');
+const placeholder = document.getElementById('placeholder');
+const readerDiv = document.getElementById('reader');
+const stationSelect = document.getElementById('stationType');
+const overlay = document.getElementById('overlay');
+const ovCard = document.getElementById('ovCard');
+
+let html5QrCode;
+let isScanning = false;
+let autoCloseTimer;
+
+stationSelect.onchange = () => {
+  document.getElementById('label-station').textContent = stationSelect.options[stationSelect.selectedIndex].text;
+};
+
+// Handle Manual Enter
+input.onkeydown = (e) => {
+  if (e.key === 'Enter' && input.value.trim()) {
+    doScan(input.value.trim());
+    input.value = '';
+  }
+};
+
+async function toggleCamera() {
+  if (isScanning) {
+    stopCamera();
+  } else {
+    startCamera();
+  }
+}
+
+async function startCamera() {
+  isScanning = true;
+  camBtn.classList.add('stop');
+  camBtn.innerHTML = '✕';
+  placeholder.classList.add('hidden');
+  readerDiv.classList.add('active');
+  input.placeholder = "Awaiting camera...";
+
+  html5QrCode = new Html5Qrcode("reader");
+  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" }, 
+      config, 
+      (qrCodeMessage) => {
+        // Success
+        doScan(qrCodeMessage);
+        // Play success sound logic could go here
+      }
+    );
+  } catch (err) {
+    console.error("Camera fail:", err);
+    alert("Could not access camera. Ensure HTTPS or localhost.");
+    stopCamera();
+  }
+}
+
+async function stopCamera() {
+  isScanning = false;
+  camBtn.classList.remove('stop');
+  camBtn.innerHTML = '📷';
+  placeholder.classList.remove('hidden');
+  readerDiv.classList.remove('active');
+  input.placeholder = "Wait for scan...";
+  
+  if (html5QrCode) {
+    try {
+      await html5QrCode.stop();
+    } catch {}
+  }
+}
+
+let isProcessing = false;
+
+async function doScan(uuid) {
+  if (isProcessing || overlay.classList.contains('show')) return;
+  isProcessing = true;
+
+  try {
+    const res = await fetch('/api/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uuid,
+        station_type: stationSelect.value,
+        operator_id:  document.getElementById('operatorId').value || 'MobileScanner'
+      })
+    });
+    const data = await res.json();
+    showResult(data);
+    updateRecent(data);
+  } catch (e) {
+    showResult({ result: 'deny', message: 'Network error' });
+  } finally {
+    // We keep isProcessing true until overlay is closed
+  }
+}
+
+const RESULTS = {
+  allow: { icon: '✅', label: 'ALLOW', bg: 'bg-allow' },
+  warn:  { icon: '⚠️', label: 'RE-ENTRY', bg: 'bg-warn' },
+  deny:  { icon: '❌', label: 'DENIED', bg: 'bg-deny' }
+};
+
+function showResult(d) {
+  clearTimeout(autoCloseTimer);
+  const config = RESULTS[d.result] || RESULTS.deny;
+  const p = d.participant || { name: 'Unknown QR' };
+
+  overlay.className = 'show';
+  ovCard.className = 'ov-card ' + config.bg;
+  document.getElementById('ovIcon').textContent = config.icon;
+  document.getElementById('ovStatus').textContent = config.label;
+  document.getElementById('ovName').textContent = p.name;
+  document.getElementById('ovMsg').textContent = d.message;
+  
+  const typeEl = document.getElementById('ovType');
+  if (p.type) {
+    typeEl.textContent = p.type;
+    typeEl.style.display = 'inline-block';
+  } else {
+    typeEl.style.display = 'none';
+  }
+
+  // Auto close
+  autoCloseTimer = setTimeout(closeOverlay, d.result === 'allow' ? 2500 : 4500);
+}
+
+function closeOverlay() {
+  overlay.className = '';
+  isProcessing = false; // Release lock
+  input.focus();
+}
+
+function updateRecent(d) {
+  const list = document.getElementById('recentList');
+  const p = d.participant || { name: 'Unknown' };
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.innerHTML = `
+    <div class="item-dot ${d.result}" style="color: ${d.result === 'allow' ? '#22c55e' : d.result === 'warn' ? '#f59e0b' : '#ef4444'}"></div>
+    <div class="item-name">${p.name} <span class="item-type">${p.type || ''}</span></div>
+    <div class="item-time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div>
+  `;
+  list.prepend(div);
+  if (list.children.length > 10) list.lastChild.remove();
+}
+
+// WebSocket 
+const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${proto}://${location.host}`);
+ws.onopen  = () => document.getElementById('wsDot').style.background = '#22c55e';
+ws.onclose = () => document.getElementById('wsDot').style.background = '#ef4444';
+
+// Autofocus loop - only focus if not in another interactive field
+setInterval(() => {
+  if (!isScanning && !overlay.classList.contains('show')) {
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'SELECT') && active !== input) return;
+    input.focus();
+  }
+}, 2000);
+
+</script>
+</body>
+</html>
+

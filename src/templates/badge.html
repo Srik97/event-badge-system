@@ -1,0 +1,248 @@
+<!-- src/templates/badge.html -->
+<!-- Rendered by Puppeteer at 96dpi → A6 = 397×561px -->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --type-color: {{TYPE_COLOR}};
+      --type-light: {{TYPE_COLOR_LIGHT}};
+      --type-dark: {{TYPE_COLOR_DARK}};
+    }
+
+    body {
+      width: 397px;
+      height: 561px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #ffffff;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Top header strip ───────────────────────────────── */
+    .header {
+      background: var(--type-color);
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      position: relative;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-area img {
+      max-height: 58px;
+      max-width: 130px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .logo-placeholder {
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-align: center;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    /* ── Body ────────────────────────────────────────────── */
+    .body {
+      padding: 24px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── Type badge pill ─────────────────────────────────── */
+    .type-pill {
+      background: var(--type-light);
+      color: var(--type-dark);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--type-color);
+      margin-bottom: 18px;
+      align-self: center;
+    }
+
+    /* ── Name ────────────────────────────────────────────── */
+    .name {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: center;
+      line-height: 1.15;
+      margin-bottom: 4px;
+      max-width: 340px;
+      word-break: break-word;
+    }
+
+    .company {
+      font-size: 13px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 22px;
+      font-style: italic;
+    }
+
+    /* ── QR code ─────────────────────────────────────────── */
+    .qr-wrapper {
+      border: 3px solid var(--type-color);
+      border-radius: 10px;
+      padding: 8px;
+      background: #fff;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+
+    .qr-wrapper img {
+      width: 140px;
+      height: 140px;
+      display: block;
+    }
+
+    /* ── Badge ID ────────────────────────────────────────── */
+    .badge-id {
+      font-size: 11px;
+      color: #888;
+      letter-spacing: 1.2px;
+      font-family: 'Courier New', monospace;
+      margin-bottom: 0;
+    }
+
+    /* ── Bottom strip ────────────────────────────────────── */
+    .footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 36px;
+      background: var(--type-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      z-index: 10;
+    }
+
+    .footer-dot {
+      width: 6px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+    }
+
+    .footer-text {
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    /* ── Lanyard hole guide ──────────────────────────────── */
+    .lanyard-hole {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(255, 255, 255, 0.6);
+    }
+
+    /* ── Subtle corner accents ───────────────────────────── */
+    .corner {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      opacity: 0.18;
+    }
+
+    .corner.bl {
+      bottom: 36px;
+      left: 0;
+      border-bottom: 3px solid var(--type-color);
+      border-left: 3px solid var(--type-color);
+    }
+
+    .corner.br {
+      bottom: 36px;
+      right: 0;
+      border-bottom: 3px solid var(--type-color);
+      border-right: 3px solid var(--type-color);
+    }
+
+    /* ── Custom Background overrides ───────────────────── */
+    .custom-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -2;
+    }
+
+    body.has-custom-bg .header {
+      display: none;
+    }
+
+    body.has-custom-bg .body {
+      padding-top: 100px;
+      /* Offset to clear the lanyard area */
+    }
+  </style>
+</head>
+
+<body class="{{BODY_CLASS}}">
+  {{BG_HTML}}
+  <div class="header">
+    <div class="lanyard-hole"></div>
+    <div class="logo-area">
+      {{LOGO_HTML}}
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="type-pill">{{PARTICIPANT_TYPE}}</div>
+    <div class="name">{{PARTICIPANT_NAME}}</div>
+    {{COMPANY_HTML}}
+    <div class="qr-wrapper">
+      <img src="{{QR_DATA_URL}}" alt="QR Code">
+    </div>
+    <div class="badge-id">{{BADGE_ID}}</div>
+  </div>
+
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div class="footer">
+    <div class="footer-dot"></div>
+    <div class="footer-text">{{PARTICIPANT_TYPE}}</div>
+    <div class="footer-dot"></div>
+  </div>
+</body>
+
+</html>

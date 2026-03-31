@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Techmen QR App</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0f1117;
+    --bg2:     #181c27;
+    --bg3:     #1e2333;
+    --border:  #2a2f42;
+    --text:    #e8eaf0;
+    --muted:   #8890a8;
+    --accent:  #4f7ef8;
+    --green:   #22c55e;
+    --amber:   #f59e0b;
+    --red:     #ef4444;
+    --radius:  10px;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* NAV */
+  .nav { background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 2px; padding: 0 20px; height: 52px; position: sticky; top: 0; z-index: 100; }
+  .nav-brand { font-weight: 700; font-size: 15px; color: var(--accent); margin-right: 24px; white-space: nowrap; }
+  .nav-btn { background: none; border: none; color: var(--muted); font-size: 13px; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .nav-btn:hover { color: var(--text); background: var(--bg3); }
+  .nav-btn.active { color: var(--text); background: var(--bg3); font-weight: 600; }
+  .ws-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); margin-left: auto; transition: background .3s; }
+  .ws-dot.live { background: var(--green); }
+
+  /* LAYOUT */
+  .main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .page { display: none; } .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-weight: 600; font-size: 15px; margin-bottom: 14px; }
+
+  /* STAT GRID */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-value.accent { color: var(--accent); }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 7px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary  { background: var(--accent); color: #fff; }
+  .btn-success  { background: #16803c; color: #fff; }
+  .btn-danger   { background: #b91c1c; color: #fff; }
+  .btn-ghost    { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* FORMS */
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 12px; color: var(--muted); }
+  input[type=text], input[type=email], input[type=date], select, input[type=file] {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 13px; padding: 7px 10px; outline: none; transition: border-color .15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input[type=text] { min-width: 200px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 10px; border-bottom: 1px solid #1e2333; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg3); }
+
+  /* BADGES / PILLS */
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: .6px; }
+  .pill-delegate   { background: #1a3c6e; color: #7eb3ff; }
+  .pill-faculty    { background: #14532d; color: #4ade80; }
+  .pill-sponsor    { background: #3b1e6e; color: #c084fc; }
+  .pill-stall      { background: #6b3c0a; color: #fbbf24; }
+  .pill-av         { background: #0e4040; color: #2dd4bf; }
+  .pill-eventteam  { background: #6b0f1e; color: #fca5a5; }
+  .pill-other      { background: #2a2f42; color: var(--muted); }
+
+  .result-allow { color: var(--green); font-weight: 600; }
+  .result-warn  { color: var(--amber); font-weight: 600; }
+  .result-deny  { color: var(--red);   font-weight: 600; }
+
+  /* UPLOAD ZONE */
+  .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 36px 20px; text-align: center; cursor: pointer; transition: border-color .2s; }
+  .drop-zone:hover, .drop-zone.drag { border-color: var(--accent); }
+  .drop-zone .icon { font-size: 32px; margin-bottom: 8px; }
+  .drop-zone p { color: var(--muted); font-size: 13px; }
+  .drop-zone strong { color: var(--accent); }
+
+  /* PROGRESS */
+  .progress-bar-wrap { background: var(--bg3); border-radius: 4px; height: 6px; overflow: hidden; margin: 8px 0; }
+  .progress-bar { height: 100%; background: var(--accent); transition: width .3s; width: 0%; }
+
+  /* LOG FEED */
+  .log-feed { max-height: 320px; overflow-y: auto; }
+  .log-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .log-item:last-child { border-bottom: none; }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .log-dot.allow { background: var(--green); }
+  .log-dot.warn  { background: var(--amber); }
+  .log-dot.deny  { background: var(--red); }
+  .log-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* TOAST */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; font-size: 13px; max-width: 320px; opacity: 0; transform: translateY(10px); transition: all .25s; z-index: 999; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error   { border-color: var(--red);   color: var(--red); }
+  #toast.info    { border-color: var(--accent); color: var(--accent); }
+
+  /* TYPE BREAKDOWN */
+  .type-bars { display: flex; flex-direction: column; gap: 8px; }
+  .type-bar-row { display: flex; align-items: center; gap: 10px; }
+  .type-bar-label { min-width: 90px; font-size: 12px; text-transform: capitalize; }
+  .type-bar-track { flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .type-bar-fill  { height: 100%; border-radius: 4px; transition: width .4s; }
+  .type-bar-count { font-size: 12px; color: var(--muted); min-width: 28px; text-align: right; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); transform: scale(0.95); transition: transform .2s; }
+  .modal-overlay.active { display: flex; }
+  .modal-overlay.active .modal { transform: scale(1); }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  .modal-text { color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+  .modal-btns { display: flex; justify-content: flex-end; gap: 12px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .form-row { flex-direction: column; }
+    input[type=text] { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">🎫 Techmen QR App</div>
+  <button type="button" class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
+  <button type="button" class="nav-btn" onclick="showPage('import')">Import</button>
+  <button type="button" class="nav-btn" onclick="showPage('participants')">Participants</button>
+  <button type="button" class="nav-btn" onclick="showPage('badges')">Badges</button>
+  <button type="button" class="nav-btn" onclick="showPage('scan')">Scan</button>
+  <button type="button" class="nav-btn" onclick="showPage('logs')">Logs</button>
+  <button type="button" class="nav-btn" onclick="showPage('settings')">Settings</button>
+  <div class="ws-dot" id="wsDot" title="WebSocket status"></div>
+</nav>
+
+<main class="main">
+
+  <!-- ── DASHBOARD ──────────────────────────────── -->
+  <div id="page-dashboard" class="page active">
+    <div class="stats" id="statsGrid">
+      <div class="stat"><div class="stat-label">Total</div><div class="stat-value accent" id="s-total">–</div></div>
+      <div class="stat"><div class="stat-label">Checked In</div><div class="stat-value green" id="s-ci">–</div></div>
+      <div class="stat"><div class="stat-label">Checked Out</div><div class="stat-value" style="color:var(--amber)" id="s-co">–</div></div>
+      <div class="stat"><div class="stat-label">Lunch Today</div><div class="stat-value amber" id="s-lunch">–</div></div>
+      <div class="stat"><div class="stat-label">Kit Collected</div><div class="stat-value" id="s-kit">–</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card">
+        <div class="card-title">Participant breakdown</div>
+        <div class="type-bars" id="typeBars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Live scan feed</div>
+        <div class="log-feed" id="liveFeed"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── IMPORT ──────────────────────────────────── -->
+  <div id="page-import" class="page">
+    <div class="card">
+      <div class="card-title">Import participants from CSV / Excel</div>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">📄</div>
+        <p><strong>Click to browse</strong> or drag & drop your file here</p>
+        <p style="margin-top:6px">Supports .csv · .xlsx · .xls — <a href="/api/import/template" style="color:var(--accent)">download template</a></p>
+      </div>
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="importFile(this.files[0])">
+      <div id="importProgress" style="display:none;margin-top:12px">
+        <div class="progress-bar-wrap"><div class="progress-bar" id="importBar" style="width:60%"></div></div>
+        <p id="importMsg" style="color:var(--muted);font-size:12px;margin-top:4px">Processing...</p>
+      </div>
+      <div id="importResult" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Column mapping reference</div>
+      <table>
+        <thead><tr><th>Column name</th><th>Required</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>Yes</td><td>Full name of participant</td></tr>
+          <tr><td><code>email</code></td><td>No</td><td></td></tr>
+          <tr><td><code>phone</code></td><td>No</td><td></td></tr>
+          <tr><td><code>participant type</code> or <code>type</code></td><td>No (defaults to delegate)</td><td>delegate · faculty · sponsor · stall · av · event team</td></tr>
+          <tr><td><code>company</code> / <code>organisation</code></td><td>No</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PARTICIPANTS ────────────────────────────── -->
+  <div id="page-participants" class="page">
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Search</label>
+          <input type="text" id="pSearch" placeholder="Name, email, badge ID…" oninput="loadParticipants()">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="pType" onchange="loadParticipants()">
+            <option value="">All types</option>
+            <option>delegate</option><option>faculty</option><option>sponsor</option>
+            <option>stall</option><option>av</option><option>event team</option>
+          </select>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="exportCSV('participants')">⬇ Export CSV</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="wipeAll(event)">🗑 Wipe all</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Badge ID</th><th>Name</th><th>Type</th><th>Email</th><th>Company</th><th>Actions</th></tr></thead>
+          <tbody id="pTable"></tbody>
+        </table>
+      </div>
+      <div id="pPaging" style="margin-top:10px;color:var(--muted);font-size:12px"></div>
+    </div>
+  </div>
+
+  <!-- ── BADGES ──────────────────────────────────── -->
+  <div id="page-badges" class="page">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card">
+        <div class="card-title">Generate badge PDFs</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:14px">
+          Generates A6 badges for all participants — color-coded by type, with QR code, name, type label, and badge ID. Produces both individual PDFs and one merged print-ready bulk PDF.
+        </p>
+        <button type="button" class="btn btn-primary" id="genBtn" onclick="generateBadges(event)">
+          🖨 Generate all badges
+        </button>
+        <div id="badgeProgress" style="display:none;margin-top:14px">
+          <div class="progress-bar-wrap"><div class="progress-bar" id="badgeBar"></div></div>
+          <p id="badgeProgressMsg" style="color:var(--muted);font-size:12px;margin-top:4px"></p>
+        </div>
+        <div id="badgeResult" style="margin-top:14px"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Upload event logo</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:14px">PNG, JPG or SVG. Shown in the header of every badge (white/inverted on the color strip).</p>
+        <input type="file" id="logoInput" accept=".png,.jpg,.jpeg,.svg" style="margin-bottom:10px">
+        <button type="button" class="btn btn-ghost" onclick="uploadLogo(event)">Upload logo</button>
+        <div id="logoResult" style="margin-top:10px;font-size:13px"></div>
+      </div>
+ 
+      <div class="card">
+        <div class="card-title">Upload badge background</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:14px">PNG format only (A6 size 105x148mm). This will replace the default badge design but preserve the Name, ID, and QR code.</p>
+        <input type="file" id="bgInput" accept=".png" style="margin-bottom:10px">
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn btn-ghost" onclick="uploadBg(event)">Upload background</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="clearBg(event)">Clear</button>
+        </div>
+        <div id="bgResult" style="margin-top:10px;font-size:13px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Type → color reference</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <span class="pill pill-delegate">Delegate — Blue</span>
+        <span class="pill pill-faculty">Faculty — Green</span>
+        <span class="pill pill-sponsor">Sponsor — Purple</span>
+        <span class="pill pill-stall">Stall — Amber</span>
+        <span class="pill pill-av">AV — Teal</span>
+        <span class="pill pill-eventteam">Event Team — Red</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCAN ────────────────────────────────────── -->
+  <div id="page-scan" class="page">
+    <div style="max-width:480px;margin:0 auto">
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Station type</label>
+            <select id="scanStation">
+              <option value="checkin">Check-in</option>
+              <option value="checkout">Check-out</option>
+              <option value="lunch">Lunch</option>
+              <option value="kit">Kit collection</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Operator / device</label>
+            <input type="text" id="scanOperator" placeholder="e.g. Gate-1" style="min-width:130px">
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Scan QR or type badge ID</label>
+          <input type="text" id="scanInput" placeholder="Focus here then scan…" autofocus
+            style="width:100%;font-size:18px;padding:12px;letter-spacing:1px"
+            onkeydown="if(event.key==='Enter')doScan()">
+        </div>
+        <button class="btn btn-primary" onclick="doScan()" style="width:100%">Scan</button>
+      </div>
+
+      <div id="scanResult" style="display:none" class="card">
+        <div id="scanResultInner"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOGS ────────────────────────────────────── -->
+  <div id="page-logs" class="page">
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Station</label>
+          <select id="logStation" onchange="loadLogs()">
+            <option value="">All stations</option>
+            <option value="checkin">Check-in</option>
+            <option value="checkout">Check-out</option>
+            <option value="lunch">Lunch</option>
+            <option value="kit">Kit</option>
+          </select>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV('full-log')">⬇ Full Log</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV('checkins')">⬇ Check-ins</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV('checkouts')">⬇ Check-outs</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV('lunch')">⬇ Lunch</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV('kit')">⬇ Kit</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Station</th><th>Operator</th><th>Badge ID</th><th>Name</th><th>Type</th><th>Result</th><th>Message</th></tr></thead>
+          <tbody id="logTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS ────────────────────────────────── -->
+  <div id="page-settings" class="page">
+    <div class="card" style="max-width:500px">
+      <div class="card-title">Event settings</div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Event name</label>
+        <input type="text" id="sEventName" placeholder="e.g. MedCon 2025">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Event date</label>
+        <input type="date" id="sEventDate">
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
+    </div>
+  </div>
+
+</main>
+
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="mTitle">Confirm Action</div>
+    <div class="modal-text" id="mText">Are you sure you want to proceed?</div>
+    <div class="modal-btns">
+      <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button type="button" class="btn btn-danger" id="mConfirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── WebSocket live updates ──────────────────────────────
+let ws;
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+  ws.onopen  = () => { document.getElementById('wsDot').classList.add('live'); };
+  ws.onclose = () => { document.getElementById('wsDot').classList.remove('live'); setTimeout(connectWS, 3000); };
+  ws.onmessage = ({ data }) => {
+    const msg = JSON.parse(data);
+    if (msg.type === 'scan') {
+      addLiveFeedItem(msg);
+      loadStats();
+      // Refresh log table if the logs page is currently visible
+      if (document.getElementById('page-logs').classList.contains('active')) {
+        loadLogs();
+      }
+    }
+    if (msg.type === 'badge_progress') {
+      const pct = Math.round((msg.done / msg.total) * 100);
+      document.getElementById('badgeBar').style.width = pct + '%';
+      document.getElementById('badgeProgressMsg').textContent = `Generating ${msg.done}/${msg.total}: ${msg.name}`;
+    }
+    if (msg.type === 'badge_complete') {
+      toast(`✅ ${msg.count} badges generated`, 'success');
+    }
+    if (msg.type === 'import_complete') loadStats();
+  };
+}
+connectWS();
+
+// ── Nav ─────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => { if (b.textContent.toLowerCase().includes(id.substring(0,4).toLowerCase())) b.classList.add('active'); });
+  if (id === 'dashboard')    loadStats();
+  if (id === 'participants') loadParticipants();
+  if (id === 'logs')         loadLogs();
+  if (id === 'settings')     loadSettings();
+  if (id === 'scan')         setTimeout(() => document.getElementById('scanInput').focus(), 100);
+}
+
+// ── Modal ───────────────────────────────────────────────
+let modalCallback = null;
+function openModal(title, text, btnText, btnClass, callback) {
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mText').textContent = text;
+  const btn = document.getElementById('mConfirmBtn');
+  btn.textContent = btnText || 'Confirm';
+  btn.className = 'btn ' + (btnClass || 'btn-danger');
+  modalCallback = callback;
+  document.getElementById('modal-overlay').classList.add('active');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+  modalCallback = null;
+}
+document.getElementById('mConfirmBtn').onclick = () => {
+  if (modalCallback) modalCallback();
+  closeModal();
+};
+
+function toast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+
+// ── Stats ───────────────────────────────────────────────
+const TYPE_COLORS_CSS = {
+  delegate: '#4f7ef8', faculty: '#22c55e', sponsor: '#a855f7',
+  stall: '#f59e0b', av: '#14b8a6', 'event team': '#ef4444'
+};
+
+async function loadStats() {
+  try {
+    const s = await fetch('/api/participants/stats').then(r => r.json());
+    document.getElementById('s-total').textContent  = s.total ?? 0;
+    document.getElementById('s-ci').textContent     = s.checkedIn ?? 0;
+    document.getElementById('s-co').textContent     = s.checkedOut ?? 0;
+    document.getElementById('s-lunch').textContent  = s.lunchDone ?? 0;
+    document.getElementById('s-kit').textContent    = s.kitDone ?? 0;
+
+    const bars = document.getElementById('typeBars');
+    if (!bars) return;
+    bars.innerHTML = '';
+    (s.byType || []).forEach(({ type, count }) => {
+      const pct = s.total ? Math.round(count / s.total * 100) : 0;
+      const color = TYPE_COLORS_CSS[type] || '#8890a8';
+      bars.innerHTML += `
+        <div class="type-bar-row">
+          <div class="type-bar-label">${type}</div>
+          <div class="type-bar-track"><div class="type-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="type-bar-count">${count}</div>
+        </div>`;
+    });
+  } catch (e) {
+    console.error('loadStats error:', e);
+  }
+}
+
+// ── Live feed ───────────────────────────────────────────
+function addLiveFeedItem(msg) {
+  const feed = document.getElementById('liveFeed');
+  const p    = msg.participant || {};
+  const time = new Date().toLocaleTimeString();
+  const div  = document.createElement('div');
+  div.className = 'log-item';
+  div.innerHTML = `
+    <div class="log-dot ${msg.result}"></div>
+    <div>
+      <div><strong>${p.name || '?'}</strong> · <span style="color:var(--muted)">${msg.station_type}</span></div>
+      <div class="log-meta">${msg.message || ''} · ${msg.operator_id || ''} · ${time}</div>
+    </div>`;
+  feed.prepend(div);
+  while (feed.children.length > 50) feed.lastChild.remove();
+}
+
+// ── Import ──────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag'); importFile(e.dataTransfer.files[0]); });
+
+async function importFile(file) {
+  if (!file) return;
+  document.getElementById('importProgress').style.display = 'block';
+  document.getElementById('importResult').innerHTML = '';
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/import', { method: 'POST', body: fd });
+    const d = await r.json();
+    document.getElementById('importProgress').style.display = 'none';
+    if (d.success) {
+      document.getElementById('importResult').innerHTML = `
+        <div style="color:var(--green);font-weight:600">✅ ${d.message}</div>
+        ${d.errors.length ? `<div style="color:var(--amber);margin-top:6px;font-size:12px">⚠ ${d.errors.length} rows skipped: ${d.errors.slice(0,3).map(e=>e.error).join(' · ')}</div>` : ''}`;
+      toast(d.message, 'success');
+      loadStats();
+    } else {
+      document.getElementById('importResult').innerHTML = `<div style="color:var(--red)">❌ ${d.error}</div>`;
+    }
+  } catch (e) {
+    document.getElementById('importProgress').style.display = 'none';
+    toast('Import failed', 'error');
+  }
+}
+
+// ── Participants ────────────────────────────────────────
+let pOffset = 0;
+async function loadParticipants() {
+  try {
+    const q    = document.getElementById('pSearch').value;
+    const type = document.getElementById('pType').value;
+    const r    = await fetch(`/api/participants?q=${encodeURIComponent(q)}&type=${type}&limit=50&offset=${pOffset}`).then(r=>r.json());
+    const tb   = document.getElementById('pTable');
+    if (!tb) return;
+    
+    if (!r.rows || r.rows.length === 0) {
+      tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No participants found.</td></tr>';
+    } else {
+      tb.innerHTML = r.rows.map(p => {
+        // Safe escaping for the name in the onclick handler
+        const safeName = (p.name || '').replace(/'/g, "\\'");
+        return `
+          <tr>
+            <td style="font-family:monospace;font-size:12px">${p.badge_id}</td>
+            <td>${p.name || ''}</td>
+            <td>${typePill(p.type)}</td>
+            <td style="color:var(--muted)">${p.email||'–'}</td>
+            <td style="color:var(--muted)">${p.company||'–'}</td>
+            <td><button type="button" class="btn btn-ghost btn-sm" onclick="deleteParticipant(event, ${p.id}, '${safeName}')">🗑</button></td>
+          </tr>`;
+      }).join('');
+    }
+    document.getElementById('pPaging').textContent = `Showing ${r.rows ? r.rows.length : 0} of ${r.total || 0}`;
+  } catch (e) {
+    console.error('loadParticipants error:', e);
+  }
+}
+
+function typePill(t) {
+  const label = t || 'delegate';
+  const cls = String(label).replace(/\s+/g, '');
+  return `<span class="pill pill-${cls}">${label}</span>`;
+}
+
+async function deleteParticipant(event, id, name) {
+  if (event) event.preventDefault();
+  openModal(
+    'Delete Participant',
+    `Are you sure you want to delete ${name}? This will also remove their scan history.`,
+    'Delete',
+    'btn-danger',
+    async () => {
+      try {
+        const r = await fetch(`/api/participants/${id}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (d.success) {
+          toast(`Deleted ${name}`, 'info');
+          loadParticipants();
+          loadStats();
+        } else {
+          toast('Error: ' + (d.error || 'Delete failed'), 'error');
+        }
+      } catch (e) {
+        console.error('deleteParticipant error:', e);
+        toast('Delete failed', 'error');
+      }
+    }
+  );
+}
+
+async function wipeAll(event) {
+  if (event) event.preventDefault();
+  openModal(
+    'Wipe All Data',
+    'DANGER: This will permanently delete ALL participants and ALL scan records. This cannot be undone.',
+    'Wipe Everything',
+    'btn-danger',
+    async () => {
+      try {
+        const r = await fetch('/api/participants', { method: 'DELETE' });
+        const d = await r.json();
+        if (d.success) {
+          toast('All data wiped', 'info');
+          pOffset = 0;
+          loadParticipants();
+          loadStats();
+        } else {
+          toast('Error: ' + (d.error || 'Wipe failed'), 'error');
+        }
+      } catch (e) {
+        console.error('wipeAll error:', e);
+        toast('Wipe failed', 'error');
+      }
+    }
+  );
+}
+
+// ── Badges ──────────────────────────────────────────────
+async function generateBadges(event) {
+  if (event) event.preventDefault();
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('badgeProgress').style.display = 'block';
+  document.getElementById('badgeBar').style.width = '0%';
+  document.getElementById('badgeResult').innerHTML = '';
+ 
+  try {
+    const r = await fetch('/api/badges/generate', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
+    const d = await r.json();
+    document.getElementById('badgeProgress').style.display = 'none';
+    if (d.success) {
+      document.getElementById('badgeResult').innerHTML = `
+        <div style="color:var(--green);font-weight:600;margin-bottom:10px">✅ ${d.count} badges generated</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a href="/api/badges/download/bulk" class="btn btn-success btn-sm">⬇ Bulk PDF (all badges)</a>
+          <a href="/api/badges/download/zip"  class="btn btn-ghost  btn-sm">⬇ Individual PDFs (ZIP)</a>
+        </div>`;
+    } else {
+      document.getElementById('badgeResult').innerHTML = `<div style="color:var(--red)">❌ ${d.error}</div>`;
+    }
+  } catch (e) {
+    console.error('generateBadges error:', e);
+    document.getElementById('badgeProgress').style.display = 'none';
+    document.getElementById('badgeResult').innerHTML = `<div style="color:var(--red)">❌ Generation failed</div>`;
+  }
+  document.getElementById('genBtn').disabled = false;
+}
+ 
+async function uploadLogo(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById('logoInput');
+  if (!input.files[0]) return toast('Choose a file first', 'info');
+  const fd = new FormData();
+  fd.append('logo', input.files[0]);
+  try {
+    const r = await fetch('/api/badges/upload-logo', { method: 'POST', body: fd });
+    const d = await r.json();
+    document.getElementById('logoResult').textContent = d.success ? '✅ Logo saved' : '❌ ' + d.error;
+    document.getElementById('logoResult').style.color = d.success ? 'var(--green)' : 'var(--red)';
+    if (d.success) toast('Logo uploaded', 'success');
+  } catch (e) {
+    console.error('uploadLogo error:', e);
+    toast('Upload failed', 'error');
+  }
+}
+ 
+async function uploadBg(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById('bgInput');
+  if (!input.files[0]) return toast('Choose a file first', 'info');
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  try {
+    const r = await fetch('/api/badges/upload-bg', { method: 'POST', body: fd });
+    const d = await r.json();
+    document.getElementById('bgResult').textContent = d.success ? '✅ Background saved' : '❌ ' + d.error;
+    document.getElementById('bgResult').style.color = d.success ? 'var(--green)' : 'var(--red)';
+    if (d.success) toast('Background uploaded', 'success');
+  } catch (e) {
+    console.error('uploadBg error:', e);
+    toast('Upload failed', 'error');
+  }
+}
+ 
+async function clearBg(event) {
+  if (event) event.preventDefault();
+  openModal(
+    'Clear Background',
+    'Revert to the default badge background design?',
+    'Revert',
+    'btn-danger',
+    async () => {
+      try {
+        const r = await fetch('/api/badges/clear-bg', { method: 'POST' });
+        const d = await r.json();
+        document.getElementById('bgResult').textContent = d.success ? '✅ Reverted to default' : '❌ ' + d.error;
+        document.getElementById('bgResult').style.color = 'var(--muted)';
+        if (d.success) toast('Reverted to default', 'info');
+      } catch (e) {
+        console.error('clearBg error:', e);
+        toast('Failed to clear background', 'error');
+      }
+    }
+  );
+}
+
+// ── Scan ────────────────────────────────────────────────
+async function doScan() {
+  const input = document.getElementById('scanInput');
+  const uuid  = input.value.trim();
+  if (!uuid) return;
+  input.value = '';
+  input.focus();
+
+  const r = await fetch('/api/scan', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      uuid,
+      station_type: document.getElementById('scanStation').value,
+      operator_id:  document.getElementById('scanOperator').value || 'admin',
+      device_label: 'admin-ui'
+    })
+  }).then(r => r.json());
+
+  const colors = { allow: '#22c55e', warn: '#f59e0b', deny: '#ef4444' };
+  const icons  = { allow: '✅', warn: '⚠️', deny: '❌' };
+  const box    = document.getElementById('scanResult');
+  const inner  = document.getElementById('scanResultInner');
+  box.style.display   = 'block';
+  box.style.borderColor = colors[r.result];
+
+  inner.innerHTML = `
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">${icons[r.result]}</div>
+    <div style="font-size:22px;font-weight:700;text-align:center;color:${colors[r.result]};margin-bottom:4px">${r.result.toUpperCase()}</div>
+    ${r.participant ? `
+      <div style="text-align:center;font-size:18px;font-weight:600;margin:10px 0 4px">${r.participant.name}</div>
+      <div style="text-align:center">${typePill(r.participant.type)}</div>
+      <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:6px">${r.participant.badge_id}</div>` : ''}
+    <div style="text-align:center;color:var(--muted);margin-top:10px;font-size:13px">${r.message}</div>`;
+}
+
+// ── Logs ────────────────────────────────────────────────
+async function loadLogs() {
+  const st = document.getElementById('logStation').value;
+  const rows = await fetch(`/api/scan/log?limit=500&station_type=${st}`).then(r=>r.json());
+  if (!rows.length) {
+    document.getElementById('logTable').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No scan records found.</td></tr>';
+    return;
+  }
+  document.getElementById('logTable').innerHTML = rows.map(l => {
+    const resultLower = (l.result || '').toLowerCase();
+    const stationLabel = { checkin: 'Check-in', checkout: 'Check-out', lunch: 'Lunch', kit: 'Kit' }[l.station_type] || l.station_type;
+    return `
+    <tr>
+      <td style="color:var(--muted);font-size:12px;white-space:nowrap">${new Date(l.scanned_at).toLocaleString()}</td>
+      <td>${stationLabel}</td>
+      <td style="color:var(--muted)">${l.operator_id || '–'}</td>
+      <td style="font-family:monospace;font-size:12px">${l.badge_id || '–'}</td>
+      <td>${l.name || '–'}</td>
+      <td>${l.type ? typePill(l.type) : '<span style="color:var(--muted)">–</span>'}</td>
+      <td><span class="result-${resultLower}">${l.result || '–'}</span></td>
+      <td style="color:var(--muted);font-size:12px">${l.message || ''}</td>
+    </tr>`;}).join('');
+}
+
+// ── Settings ────────────────────────────────────────────
+async function loadSettings() {
+  const s = await fetch('/api/settings').then(r=>r.json());
+  document.getElementById('sEventName').value = s.event_name || '';
+  document.getElementById('sEventDate').value = s.event_date || '';
+}
+async function saveSettings() {
+  await fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      event_name: document.getElementById('sEventName').value,
+      event_date: document.getElementById('sEventDate').value
+    })
+  });
+  toast('Settings saved', 'success');
+}
+
+// ── Export helpers ──────────────────────────────────────
+function exportCSV(type) {
+  // Map frontend type names to backend route names
+  const routeMap = { 'full-log': 'full', 'checkins': 'checkins', 'checkouts': 'checkouts', 'lunch': 'lunch', 'kit': 'kit', 'participants': 'participants' };
+  window.location = `/api/export/${routeMap[type] || type}`;
+}
+
+// ── Init ────────────────────────────────────────────────
+loadStats();
+</script>
+</body>
+</html>
